@@ -108,7 +108,7 @@ data "aws_iam_policy_document" "codepipeline_policy" {
     sid    = "PassRole"
     effect = "Allow"
     actions = ["iam:PassRole"]
-    resources = [aws_iam_role.codebuild_role.arn, aws_iam_role.codepipeline_role.arn]
+    resources = [data.aws_iam_role.codebuild_role.arn, aws_iam_role.codepipeline_role.arn]
   }
 }
 
@@ -117,92 +117,16 @@ resource "aws_iam_role_policy" "codepipeline_inline" {
   policy = data.aws_iam_policy_document.codepipeline_policy.json
 }
 
-# IAM Role para CodeBuild
-data "aws_iam_policy_document" "codebuild_trust" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["codebuild.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "codebuild_role" {
-  name               = "${var.project_name}-codebuild-role"
-  assume_role_policy = data.aws_iam_policy_document.codebuild_trust.json
-}
-
-data "aws_iam_policy_document" "codebuild_policy" {
-  statement {
-    sid    = "CloudWatchLogs"
-    effect = "Allow"
-    actions = [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents"
-    ]
-    resources = ["*"]
-  }
-
-  statement {
-    sid    = "S3Access"
-    effect = "Allow"
-    actions = [
-      "s3:GetObject",
-      "s3:GetObjectVersion",
-      "s3:PutObject"
-    ]
-    resources = [
-      aws_s3_bucket.artifacts.arn,
-      "${aws_s3_bucket.artifacts.arn}/*"
-    ]
-  }
-
-  statement {
-    sid    = "ECRAccess"
-    effect = "Allow"
-    actions = [
-      "ecr:GetAuthorizationToken",
-      "ecr:BatchCheckLayerAvailability",
-      "ecr:GetDownloadUrlForLayer",
-      "ecr:BatchGetImage",
-      "ecr:PutImage",
-      "ecr:InitiateLayerUpload",
-      "ecr:UploadLayerPart",
-      "ecr:CompleteLayerUpload"
-    ]
-    resources = ["*"]
-  }
-
-  statement {
-    sid    = "EKSAccess"
-    effect = "Allow"
-    actions = [
-      "eks:DescribeCluster",
-      "eks:ListClusters"
-    ]
-    resources = ["*"]
-  }
-
-  statement {
-    sid    = "STSAccess"
-    effect = "Allow"
-    actions = ["sts:GetCallerIdentity"]
-    resources = ["*"]
-  }
-}
-
-resource "aws_iam_role_policy" "codebuild_inline" {
-  role   = aws_iam_role.codebuild_role.id
-  policy = data.aws_iam_policy_document.codebuild_policy.json
+# IAM Role para CodeBuild (usando role existente conforme requisito #5)
+data "aws_iam_role" "codebuild_role" {
+  name = "codebuild-asn-demo-lab-service-role"
 }
 
 # CodeBuild (Build Stage)
 resource "aws_codebuild_project" "build" {
   name         = "${var.project_name}-build"
   description  = "Build & push image to ECR; generate k8s manifest"
-  service_role = aws_iam_role.codebuild_role.arn
+  service_role = data.aws_iam_role.codebuild_role.arn
 
   artifacts {
     type = "CODEPIPELINE"
@@ -258,7 +182,7 @@ resource "aws_codebuild_project" "build" {
 resource "aws_codebuild_project" "deploy" {
   name         = "${var.project_name}-deploy"
   description  = "Kubectl apply on EKS"
-  service_role = aws_iam_role.codebuild_role.arn
+  service_role = data.aws_iam_role.codebuild_role.arn
 
   artifacts { type = "CODEPIPELINE" }
 

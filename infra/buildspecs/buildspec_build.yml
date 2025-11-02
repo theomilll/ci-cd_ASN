@@ -14,7 +14,7 @@ phases:
     commands:
       - echo "==> Build da imagem a partir de ${APP_PATH}"
       - cd "${CODEBUILD_SRC_DIR}/${APP_PATH}"
-      - test -f Dockerfile || { echo "ERRO: Dockerfile não encontrado em ${APP_PATH}"; exit 1; }
+      - 'test -f Dockerfile || { echo "ERRO: Dockerfile não encontrado em ${APP_PATH}"; exit 1; }'
       - docker build -t "${ECR_REPO_URI}:${IMAGE_TAG}" .
   post_build:
     commands:
@@ -23,7 +23,7 @@ phases:
       - echo "==> Gerar manifest K8s com a nova imagem"
       - cd "${CODEBUILD_SRC_DIR}"
       - mkdir -p k8s
-      - test -f k8s/deployment.tmpl.yaml || { echo "ERRO: k8s/deployment.tmpl.yaml não existe no repo"; exit 1; }
+      - 'test -f k8s/deployment.tmpl.yaml || { echo "ERRO: k8s/deployment.tmpl.yaml não existe no repo"; exit 1; }'
       - sed "s|__IMAGE__|${ECR_REPO_URI}:${IMAGE_TAG}|g" k8s/deployment.tmpl.yaml > k8s/deployment.yaml
       - echo "${IMAGE_TAG}" > image_tag.txt
 artifacts:

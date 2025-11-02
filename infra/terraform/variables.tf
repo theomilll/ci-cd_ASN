@@ -25,7 +25,7 @@ variable "github_branch" {
 variable "codestar_connection_name" {
   description = "Nome amigável da conexão GitHub (CodeStar Connections)"
   type        = string
-  default     = "github-connection"
+  default     = "git-connection"
 }
 
 variable "ecr_repo_name" {
