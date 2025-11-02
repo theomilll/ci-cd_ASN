@@ -1,0 +1,33 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "==> Pre-build: autenticar no ECR"
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+      - aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REGISTRY}
+      - COMMIT_ID=$(echo ${CODEBUILD_RESOLVED_SOURCE_VERSION} | cut -c1-7)
+      - IMAGE_TAG=${COMMIT_ID:-"manual"}
+      - echo "IMAGE_TAG=${IMAGE_TAG}"
+  build:
+    commands:
+      - echo "==> Build da imagem a partir de ${APP_PATH}"
+      - cd "${CODEBUILD_SRC_DIR}/${APP_PATH}"
+      - test -f Dockerfile || { echo "ERRO: Dockerfile não encontrado em ${APP_PATH}"; exit 1; }
+      - docker build -t "${ECR_REPO_URI}:${IMAGE_TAG}" .
+  post_build:
+    commands:
+      - echo "==> Push da imagem ${ECR_REPO_URI}:${IMAGE_TAG}"
+      - docker push "${ECR_REPO_URI}:${IMAGE_TAG}"
+      - echo "==> Gerar manifest K8s com a nova imagem"
+      - cd "${CODEBUILD_SRC_DIR}"
+      - mkdir -p k8s
+      - test -f k8s/deployment.tmpl.yaml || { echo "ERRO: k8s/deployment.tmpl.yaml não existe no repo"; exit 1; }
+      - sed "s|__IMAGE__|${ECR_REPO_URI}:${IMAGE_TAG}|g" k8s/deployment.tmpl.yaml > k8s/deployment.yaml
+      - echo "${IMAGE_TAG}" > image_tag.txt
+artifacts:
+  files:
+    - k8s/deployment.yaml
+    - image_tag.txt
+
