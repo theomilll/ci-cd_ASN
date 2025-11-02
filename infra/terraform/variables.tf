@@ -13,7 +13,7 @@ variable "region" {
 variable "github_owner_repo" {
   description = "Formato: owner/repo do seu repo público"
   type        = string
-  # exemplo: "seu-usuario/todo-list-cicd"
+  default     = "theomilll/ci-cd_ASN"
 }
 
 variable "github_branch" {
@@ -49,11 +49,5 @@ variable "k8s_namespace" {
 variable "app_path" {
   description = "Caminho onde está o Dockerfile para build (ex.: todo-frontend)"
   type        = string
-  default     = "todo-list-app"
-}
-
-variable "codebuild_service_role_arn" {
-  description = "Role obrigatório para TODOS os CodeBuild"
-  type        = string
-  default     = "arn:aws:iam::325583868777:role/service-role/codebuild-asn-demo-lab-service-role"
+  default     = "."
 }
