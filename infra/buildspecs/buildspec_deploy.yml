@@ -3,20 +3,17 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo "==> Instalar/validar kubectl e configurar kubeconfig"
-      - if ! command -v kubectl >/dev/null 2>&1; then
-          curl -sSLo kubectl "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" &&
-          install -m 0755 kubectl /usr/local/bin/kubectl;
-        fi
+      - echo "Instalar/validar kubectl e configurar kubeconfig"
+      - 'if ! command -v kubectl >/dev/null 2>&1; then curl -sSLo kubectl "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && install -m 0755 kubectl /usr/local/bin/kubectl; fi'
       - aws eks update-kubeconfig --name "${CLUSTER_NAME}" --region "${AWS_DEFAULT_REGION}"
-      - echo "==> Garantir namespace ${K8S_NAMESPACE}"
+      - echo "Garantir namespace ${K8S_NAMESPACE}"
       - kubectl get ns "${K8S_NAMESPACE}" || kubectl create ns "${K8S_NAMESPACE}"
   build:
     commands:
-      - echo "==> Aplicar Deployment/Service atualizados"
-      - test -f k8s/deployment.yaml || { echo "ERRO: k8s/deployment.yaml não está no artifact"; exit 1; }
+      - echo "Aplicar Deployment/Service atualizados"
+      - 'test -f k8s/deployment.yaml || { echo "ERRO: k8s/deployment.yaml não está no artifact"; exit 1; }'
       - kubectl apply -n "${K8S_NAMESPACE}" -f k8s/deployment.yaml
-      - echo "==> Aguardar rollout"
+      - echo "Aguardar rollout"
       - kubectl rollout status -n "${K8S_NAMESPACE}" deploy/todo-app --timeout=180s
 artifacts:
   files:
