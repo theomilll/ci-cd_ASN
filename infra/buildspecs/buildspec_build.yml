@@ -30,4 +30,5 @@ artifacts:
   files:
     - k8s/deployment.yaml
     - image_tag.txt
+    - infra/buildspecs/buildspec_deploy.yml
 
